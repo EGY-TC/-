@@ -161,19 +161,23 @@ input[type=range]{padding:0;height:34px;accent-color:var(--acc)}
 .gt-nm{font-weight:900;font-size:13px}
 .gt-sub{font-size:10px;color:var(--dim);text-align:center;line-height:1.4}
 .box-title{text-align:center;font-weight:900;font-size:16px;color:var(--gold);margin-bottom:2px}
-.box-sub{text-align:center;font-size:11.5px;color:var(--dim);margin-bottom:10px}
+.box-sub{text-align:center;font-size:11.5px;color:var(--dim);margin-bottom:10px;line-height:1.7}
 .box-panels{display:flex;flex-direction:column;gap:14px}
 .box-panel{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:10px}
 .box-panel h5{font-size:13px;color:var(--blue);margin-bottom:8px;text-align:center;font-weight:900}
-.box-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}
-.box-item{aspect-ratio:1;background:var(--card);border:2px solid var(--line);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-weight:900;gap:2px;padding:2px}
-.box-item .bq{font-size:26px;color:var(--dim)}
-.box-item.opened{border-color:var(--gold);background:rgba(210,153,34,.1);cursor:default}
-.box-item.opened .bn{font-size:10px;font-weight:900;text-align:center;line-height:1.3}
-.box-item.opened .br{font-size:15px;color:var(--gold);font-weight:900}
-.box-item.locked{opacity:.3;cursor:not-allowed}
-.box-item.picked{border-color:var(--acc);background:rgba(63,185,80,.15)}
-.box-pickbtn{margin-top:6px;width:100%;padding:8px;border:none;border-radius:8px;background:var(--acc);color:#04180a;font-weight:900;font-size:11.5px;cursor:pointer}
+.box-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
+.box-item{position:relative;aspect-ratio:1;background:linear-gradient(160deg,#2a1f0a,#1c2128);border:2px solid var(--gold);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-weight:900;gap:2px;padding:4px;overflow:hidden;box-shadow:0 3px 8px rgba(0,0,0,.35);transition:transform .15s}
+.box-item:not(.locked):not(.opened):active{transform:scale(.94)}
+.box-item .bq{font-size:30px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+.box-item.opened{aspect-ratio:auto;min-height:112px;background:var(--card);border-color:var(--line);cursor:default;padding:6px 4px}
+.box-item.opened .box-img{width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--card2);margin-bottom:2px}
+.box-item.opened .bn{font-size:9.5px;font-weight:900;text-align:center;line-height:1.25}
+.box-item.opened .br{font-size:14px;color:var(--gold);font-weight:900}
+.box-item.locked{opacity:.35;cursor:not-allowed;border-color:var(--line);background:var(--card2)}
+.box-item.picked{border-color:var(--acc);background:rgba(63,185,80,.12)}
+.box-item.bonus{border-color:var(--purple)}
+.box-bonus{background:var(--purple);color:#fff;font-size:9px;font-weight:900;border-radius:6px;padding:2px 5px;margin-bottom:3px;white-space:nowrap}
+.box-pickbtn{margin-top:4px;width:100%;padding:7px;border:none;border-radius:8px;background:var(--acc);color:#04180a;font-weight:900;font-size:10.5px;cursor:pointer}
 .box-status{text-align:center;font-size:11.5px;color:var(--dim);margin-top:6px}
 .pc-ready{background:var(--card2);border-radius:10px;padding:8px;text-align:center;font-size:12px;font-weight:800;margin:6px 0}
 .friend-row{display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:6px 8px;margin:4px 0;font-size:12px;font-weight:700;justify-content:space-between;flex-wrap:wrap}
@@ -188,8 +192,8 @@ input[type=range]{padding:0;height:34px;accent-color:var(--acc)}
 <div class="card">
 <div class="opt-lbl" style="margin-top:0">🎮 اختر نوع اللعبة</div>
 <div class="gt-grid">
-<button class="gt-btn sel" id="gt0" onclick="pickGameType(\'auction\')"><span class="gt-ic">⚽</span><span class="gt-nm">مزاد النجوم</span><span class="gt-sub">مزاد على 11 لاعبًا</span></button>
-<button class="gt-btn" id="gt1" onclick="pickGameType(\'boxes\')"><span class="gt-ic">🎁</span><span class="gt-nm">صناديق الحظ</span><span class="gt-sub">اختر لاعبك من 4 صناديق لكل مركز</span></button>
+<button class="gt-btn sel" id="gt0" onclick="pickGameType('auction')"><span class="gt-ic">⚽</span><span class="gt-nm">مزاد النجوم</span><span class="gt-sub">مزاد على 11 لاعبًا</span></button>
+<button class="gt-btn" id="gt1" onclick="pickGameType('boxes')"><span class="gt-ic">🎁</span><span class="gt-nm">صناديق الحظ</span><span class="gt-sub">اختر لاعبك من 4 صناديق لكل مركز</span></button>
 </div>
 <label>اسمك (إجباري)</label><input id="name1" placeholder="اكتب اسمك" oninput="saveNames()">
 <label>اسم اللاعب الثاني (نفس الجهاز)</label><input id="name2" placeholder="اكتب الاسم" oninput="saveNames()">
@@ -849,9 +853,29 @@ function initialsImg(p){
  var col=p.r>=88?'#d29922':p.r>=85?'#3fb950':p.r>=80?'#58a6ff':'#8b949e';
  return 'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#1c2128"/><circle cx="100" cy="100" r="85" fill="'+col+'" opacity="0.22"/><text x="100" y="128" font-size="72" font-family="Arial" font-weight="bold" text-anchor="middle" fill="'+col+'">'+init+'</text></svg>');
 }
-function wikiImg(en,el){if(!en)return;
+function wikiImg(en,el){
+ if(!en)return;
  if(IMG[en]!==undefined){if(IMG[en])el.src=IMG[en];return;}
- try{fetch('https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&pithumbsize=800&redirects=1&origin=*&titles='+encodeURIComponent(en)).then(function(r){return r.json();}).then(function(j){var pages=j&&j.query&&j.query.pages;if(!pages)return;var keys=Object.keys(pages);if(!keys.length)return;var p=pages[keys[0]];var u=(p&&p.thumbnail)?p.thumbnail.source:'';IMG[en]=u;if(u)el.src=u;}).catch(function(){});}catch(e){}}
+ var searchUrl='https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch='+encodeURIComponent(en+' footballer')+'&gsrlimit=1&prop=pageimages&piprop=thumbnail&pithumbsize=800&format=json&origin=*';
+ var directUrl='https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&pithumbsize=800&redirects=1&origin=*&titles='+encodeURIComponent(en);
+ function fromPages(j){
+  var pages=j&&j.query&&j.query.pages;if(!pages)return'';
+  var keys=Object.keys(pages);if(!keys.length)return'';
+  var p=pages[keys[0]];
+  return (p&&p.thumbnail)?p.thumbnail.source:'';
+ }
+ try{
+  fetch(searchUrl).then(function(r){return r.json();}).then(function(j){
+   var u=fromPages(j);
+   if(u){IMG[en]=u;el.src=u;return;}
+   return fetch(directUrl).then(function(r){return r.json();}).then(function(j2){
+    var u2=fromPages(j2);IMG[en]=u2;if(u2)el.src=u2;
+   });
+  }).catch(function(){
+   try{fetch(directUrl).then(function(r){return r.json();}).then(function(j2){var u2=fromPages(j2);IMG[en]=u2;if(u2)el.src=u2;}).catch(function(){IMG[en]='';});}catch(e){IMG[en]='';}
+  });
+ }catch(e){}
+}
 function bindWiki(root){try{root.querySelectorAll('img[data-en]').forEach(function(im){wikiImg(im.dataset.en,im);});}catch(e){}}
 function makeCodeRaw(){var c='ABCDEFGHJKMNPQRSTUVWXYZ23456789',s='';for(var i=0;i<4;i++)s+=c[Math.floor(Math.random()*c.length)];return s;}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
@@ -872,7 +896,7 @@ function pickGameType(t){
  if(t==='auction'){
   $('gameDesc').innerHTML='مزاد تنافسي لتكوين تشكيلة من 11 لاعبًا (حارس + 4 دفاع + 3 وسط + 3 هجوم).<br>الصامد يضمّ النجم بعرضه، والمنسحب يحصل على لاعب من نفس المركز.<br>بعد المزاد: تفتح واجهة كروت خاصة (سرقة، حماية، وايلد كارد مجاني وغيرها)، ثم يختار كل فريق الكابتن، وأخيرًا مباراة تحسم اللقب.';
  }else{
-  $('gameDesc').innerHTML='تشكيلة خماسية: حارس، مدافع، وسط، وسط مهاجم، مهاجم.<br>لكل مركز 4 صناديق مغلقة — افتح صندوقًا واحدًا واقبله (Deal)، أو جرّب صندوقًا تانيًا (No Deal) لكن هتاخده إجباري ومفيش رجوع للأول.<br>بعدها كل فريق ياخد كارت حماية وكارت سرقة (مرة واحدة لكل واحد)، ثم كابتن، ثم مباراة تحسم اللقب.';
+  $('gameDesc').innerHTML='تشكيلة خماسية: حارس، مدافع، وسط، وسط مهاجم، مهاجم.<br>لكل مركز 4 صناديق مغلقة — افتح صندوقًا واحدًا واقبله (Deal)، أو جرّب صندوقًا تانيًا (No Deal) لكن هتاخده إجباري ومفيش رجوع للأول.<br>🃏 بعض الصناديق فيها مفاجأة: كارت حماية أو كارت سرقة تكسبه لو قبلت الصندوق ده! بعد الـ5 مراكز تقدر تستخدم اللي كسبته، ثم كابتن، ثم مباراة تحسم اللقب.';
  }
 }
 function pickMode(m){
@@ -890,7 +914,7 @@ function pickMode(m){
  }catch(e){toast('خطأ: '+e.message);}
 }
 function myName(){return $('name1').value.trim()||'اللاعب الأول';}
-function defaultCards(){return gameType==='boxes'?{steal:1,protect:1}:{steal:1,protect:1,wild:1,norisk:1,gift:1};}
+function defaultCards(){return gameType==='boxes'?{steal:0,protect:0}:{steal:1,protect:1,wild:1,norisk:1,gift:1};}
 function mkP(n){return{name:n,budget:CFG.budget,squad:[],spent:0,cards:defaultCards()};}
 function ensureCards(p){if(!p.cards)p.cards=defaultCards();}
 function setStatus(t){$('roomStatus').textContent=t;}
@@ -1017,7 +1041,7 @@ function balancedStars(){
  var chosen=byGroup.GK.slice(0,1).concat(byGroup.DEF.slice(0,4),byGroup.MID.slice(0,3),byGroup.ATT.slice(0,3));
  var usedKeys={};chosen.forEach(function(p){usedKeys[p.en]=true;});
  var restPool=PLAYERS.filter(function(p){return !usedKeys[p.en];});
- return{stars:shuffle(chosen),pool:shuffle(restPool)};
+ return{stars:chosen,pool:shuffle(restPool)};
 }
 function startFromSettings(){
  if(online&&isHost){
@@ -1040,6 +1064,7 @@ function updateGameTitleUI(){
 }
 function initGame(){
  round=0;boxRound=0;logArr=[];prevBid=-1;lastCardRound=-1;started=true;captainIdx=[-1,-1];cardsReady=[false,false];
+ if(gameType==='boxes')planBoxCardsOnce();
  updateGameTitleUI();
  show('game');
  setView(gameType==='boxes'?'boxes':'bid');
@@ -1103,12 +1128,30 @@ function drawBoxPlayers(pos,n){
  picked.forEach(function(p){boxUsedSet[p.en]=true;});
  return picked;
 }
+var boxCardPlan=[{steal:-1,protect:-1},{steal:-1,protect:-1}];
+function planBoxCardsOnce(){
+ for(var s=0;s<2;s++){
+  var idx=shuffle([0,1,2,3,4]);
+  boxCardPlan[s]={steal:idx[0],protect:idx[1]};
+ }
+}
+function attachBonusCard(seat,arr){
+ var plan=boxCardPlan[seat];var type=null;
+ if(plan.steal===boxRound)type='steal';
+ else if(plan.protect===boxRound)type='protect';
+ if(type){
+  var bi=Math.floor(Math.random()*arr.length);
+  arr[bi]=Object.assign({},arr[bi],{bonusCard:type});
+ }
+}
 function startBoxRound(){
  if(online&&!isHost)return;
  if(boxRound>=BOX_POS.length)return startPostCards();
  phase='box';
  var pos=BOX_POS[boxRound];
- boxSets=[drawBoxPlayers(pos,4),drawBoxPlayers(pos,4)];
+ var s0=drawBoxPlayers(pos,4),s1=drawBoxPlayers(pos,4);
+ attachBonusCard(0,s0);attachBonusCard(1,s1);
+ boxSets=[s0,s1];
  boxOpened=[[],[]];boxPicked=[null,null];
  log('🎁 الجولة '+(boxRound+1)+': اختر '+BOX_LBL[pos]);
  render();broadcast();
@@ -1169,9 +1212,12 @@ function finalizeBoxPos(){
  P[0].squad.push({ar:s0.ar,en:s0.en,pos:s0.pos,flag:s0.flag,club:s0.club,r:s0.r});
  P[1].squad.push({ar:s1.ar,en:s1.en,pos:s1.pos,flag:s1.flag,club:s1.club,r:s1.r});
  log(P[0].name+' اختار '+s0.ar+' ('+s0.r+') — '+P[1].name+' اختار '+s1.ar+' ('+s1.r+')');
+ var bonusLine0='',bonusLine1='';
+ if(s0.bonusCard){ensureCards(P[0]);P[0].cards[s0.bonusCard]=(P[0].cards[s0.bonusCard]||0)+1;var lbl0=s0.bonusCard==='steal'?'🥷 كارت سرقة':'🛡️ كارت حماية';log(P[0].name+' كسب '+lbl0+' من الصندوق!');bonusLine0='<div style="font-size:12px;color:var(--gold);font-weight:900;margin-top:4px">+ '+lbl0+' 🎉</div>';}
+ if(s1.bonusCard){ensureCards(P[1]);P[1].cards[s1.bonusCard]=(P[1].cards[s1.bonusCard]||0)+1;var lbl1=s1.bonusCard==='steal'?'🥷 كارت سرقة':'🛡️ كارت حماية';log(P[1].name+' كسب '+lbl1+' من الصندوق!');bonusLine1='<div style="font-size:12px;color:var(--gold);font-weight:900;margin-top:4px">+ '+lbl1+' 🎉</div>';}
  var content='<h2>'+BOX_LBL[BOX_POS[boxRound]]+'</h2><div class="reveal">'+
- '<div>'+pcardHTML(s0,false,false)+'<div style="font-size:12px;color:var(--dim);margin-top:6px">اختيار <b style="color:var(--gold)">'+P[0].name+'</b></div></div>'+
- '<div>'+pcardHTML(s1,false,false)+'<div style="font-size:12px;color:var(--dim);margin-top:6px">اختيار <b style="color:var(--blue)">'+P[1].name+'</b></div></div></div>';
+ '<div>'+pcardHTML(s0,false,false)+'<div style="font-size:12px;color:var(--dim);margin-top:6px">اختيار <b style="color:var(--gold)">'+P[0].name+'</b></div>'+bonusLine0+'</div>'+
+ '<div>'+pcardHTML(s1,false,false)+'<div style="font-size:12px;color:var(--dim);margin-top:6px">اختيار <b style="color:var(--blue)">'+P[1].name+'</b></div>'+bonusLine1+'</div></div>';
  ovH=content+'<button class="big-btn green" onclick="closeBoxReveal()">المركز التالي</button>';
  ovG=content+'<div class="status">بانتظار المضيف…</div>';
  phase='boxreveal';
@@ -1383,7 +1429,7 @@ function endGame(){
 }
 function renderPostCardsOverlay(){
  var me=online?mySeat:0;
- var html='<h2>🃏 مرحلة الكروت الخاصة</h2><div class="phase-title">'+(gameType==='boxes'?'كل فريق عنده كارت حماية وكارت سرقة (مرة واحدة)':'استخدم كروتك المتاحة قبل اختيار الكابتن')+'</div>';
+ var html='<h2>🃏 مرحلة الكروت الخاصة</h2><div class="phase-title">'+(gameType==='boxes'?'استخدم أي كارت كسبته من الصناديق (لو كسبت حاجة)':'استخدم كروتك المتاحة قبل اختيار الكابتن')+'</div>';
  var defs=gameType==='boxes'?BOX_CARD_DEFS:CARD_DEFS;
  var seatsToShow=(mode===2)?[0,1]:[me];
  seatsToShow.forEach(function(seat){
@@ -1418,7 +1464,7 @@ function renderPostCardsOverlay(){
    html+='<div class="cards-grid">';
    defs.forEach(function(d){
     var n=P[seat].cards[d[0]];var price=gameType==='boxes'?0:(CARD_PRICES[d[0]]||0);var afford=price<=P[seat].budget;
-    html+='<div class="card-item'+((n<1||!afford)?' off':'')+'" onclick="'+((n<1||!afford)?'':('openPostCardPicker('+seat+');selectCard(\''+d[0]+'\')'))+'"><div class="ci-ic">'+d[1]+'</div><div class="ci-nm">'+d[2]+'</div><div class="ci-left">'+(n>0?(afford?'متاح ✅':'الرصيد لا يكفي'):'مستخدم ❌')+'</div><div class="ci-price">'+(price>0?fmt(price):'مجاني 🎉')+'</div></div>';
+    html+='<div class="card-item'+((n<1||!afford)?' off':'')+'" onclick="'+((n<1||!afford)?'':('openPostCardPicker('+seat+');selectCard(\''+d[0]+'\')'))+'"><div class="ci-ic">'+d[1]+'</div><div class="ci-nm">'+d[2]+'</div><div class="ci-left">'+(n>0?(afford?'متاح ✅':'الرصيد لا يكفي'):(gameType==='boxes'?'لم تفز بيه 🎲':'مستخدم ❌'))+'</div><div class="ci-price">'+(price>0?fmt(price):'مجاني 🎉')+'</div></div>';
    });
    html+='</div><button class="big-btn green" style="margin-top:8px" onclick="markReady('+seat+')">✅ تم — كمّل</button>';
   }
@@ -1443,17 +1489,19 @@ function renderBoxPhase(){
    var canPick=mine&&!boxPicked[seat]&&opened&&boxOpened[seat].length===1;
    if(opened&&(mine||boxPicked[seat])){
     var pl=boxSets[seat][i];
-    html+='<div class="box-item opened'+(isPicked?' picked':'')+'" '+(canPick?('onclick="boxClickPick('+seat+','+i+')"'):'')+'><div class="bn">'+pl.flag+' '+pl.ar+'</div><div class="br">'+pl.r+'</div>'+(canPick?'<div class="box-pickbtn" onclick="boxClickPick('+seat+','+i+')">✅ قبول (Deal)</div>':'')+'</div>';
+    var bonusBadge=pl.bonusCard?('<div class="box-bonus">'+(pl.bonusCard==='steal'?'🥷 سرقة!':'🛡️ حماية!')+'</div>'):'';
+    html+='<div class="box-item opened'+(isPicked?' picked':'')+(pl.bonusCard?' bonus':'')+'" '+(canPick?('onclick="boxClickPick('+seat+','+i+')"'):'')+'>'+bonusBadge+'<img class="box-img" data-en="'+pl.en+'" src="'+initialsImg(pl)+'"><div class="bn">'+pl.flag+' '+pl.ar+'</div><div class="br">'+pl.r+'</div>'+(canPick?'<div class="box-pickbtn" onclick="boxClickPick('+seat+','+i+')">✅ قبول (Deal)</div>':'')+'</div>';
    }else{
-    html+='<div class="box-item'+(canOpen?'':' locked')+'" '+(canOpen?('onclick="boxClickOpen('+seat+','+i+')"'):'')+'><div class="bq">'+(mine?'❓':'🔒')+'</div></div>';
+    html+='<div class="box-item'+(canOpen?'':' locked')+'" '+(canOpen?('onclick="boxClickOpen('+seat+','+i+')"'):'')+'><div class="bq">'+(mine?'🎁':'🔒')+'</div></div>';
    }
   }
   html+='</div>';
-  if(mine&&!boxPicked[seat])html+='<div class="box-status">'+(boxOpened[seat].length===0?'افتح صندوقًا واحدًا للبدء':'عجبك اللاعب؟ اقبله، أو افتح صندوقًا تانيًا — هتاخده إجباري ومفيش رجوع للأول (No Deal)')+'</div>';
+  if(mine&&!boxPicked[seat])html+='<div class="box-status">'+(boxOpened[seat].length===0?'افتح صندوقًا واحدًا للبدء — ممكن يبقى جواه كارت حماية أو سرقة كمان!':'عجبك اللاعب؟ اقبله، أو افتح صندوقًا تانيًا — هتاخده إجباري ومفيش رجوع للأول (No Deal)')+'</div>';
   html+='</div>';
  });
- html='<div class="box-title">🎁 '+BOX_LBL[pos]+'</div><div class="box-sub">افتح صندوقًا واحدًا من الأربعة. اقبله (Deal)، أو جرّب صندوقًا تانيًا (No Deal) — لكن لو فتحت التاني بتاخده إجباري ومفيش رجوع للأول</div>'+html+'</div>';
+ html='<div class="box-title">🎁 '+BOX_LBL[pos]+'</div><div class="box-sub">افتح صندوقًا واحدًا من الأربعة. اقبله (Deal)، أو جرّب صندوقًا تانيًا (No Deal) — لكن لو فتحت التاني بتاخده إجباري ومفيش رجوع للأول.<br>بعض الصناديق فيها كارت حماية أو سرقة تكسبه لو قبلت الصندوق ده!</div>'+html+'</div>';
  $('obox').innerHTML=html;
+ bindWiki($('obox'));
 }
 function render(){
  if(phase==='box'){$('overlay').classList.remove('hidden');renderBoxPhase();return;}
