@@ -724,6 +724,7 @@ body{text-rendering:optimizeSpeed}
 <button id="lbt1" onclick="setLbTab('season')">📅 الموسم</button>
 <button id="lbt2" onclick="setLbTab('h2h')">⚔️ مواجهاتي</button>
 </div>
+<div id="lbSeasonCd" class="lb-sub" style="text-align:center;margin-bottom:8px"></div>
 <div id="lbMe" class="lb-me hidden"></div>
 <div id="lbList">جارٍ التحميل…</div>
 <button class="big-btn goldb" style="margin-top:10px" onclick="loadLeaderboard()">🔄 تحديث</button>
@@ -2705,6 +2706,7 @@ var WIKI_TITLE_OVERRIDE={
  "Ferenc Puskás":"Ferenc Puskás",
  "Alfredo Di Stéfano":"Alfredo Di Stéfano"
 };
+var IMG_FAILS={};
 function wikiImg(en,el){
  if(!en)return;
  if(IMG[en]!==undefined){if(IMG[en])el.src=IMG[en];return;}
@@ -2722,14 +2724,22 @@ function wikiImg(en,el){
      لأن البحث العام بيرجع "أقرب نتيجة" حتى لو مش نفس اللاعب خالص (أسامي زي "Fred" أو "Kevin"
      كانت بترجع صور ناس تانية تمامًا). الأوفررايد لو موجود بيدّينا اسم الصفحة الصح، ولو مش
      موجود بنجرب بالاسم زي ما هو الأول لأن أغلب صفحات اللاعبين عنوانها اسمهم بالظبط. */
+  function giveUp(){
+   /* منسبش الصورة معطوبة من أول فشلة — ده كان بيخلي أي مشكلة نت مؤقتة
+      (خصوصًا على جوال أو نت ضعيف) تمنع صورة اللاعب ده طول الجلسة، حتى
+      لو النت رجع تاني كويس بعد كده */
+   IMG_FAILS[en]=(IMG_FAILS[en]||0)+1;
+   if(IMG_FAILS[en]>=3)IMG[en]='';
+  }
   fetch(directUrl).then(function(r){return r.json();}).then(function(j2){
    var u2=fromPages(j2);
-   if(u2){IMG[en]=u2;el.src=u2;return;}
+   if(u2){IMG[en]=u2;IMG_FAILS[en]=0;el.src=u2;return;}
    return fetch(searchUrl).then(function(r){return r.json();}).then(function(j){
-    var u=fromPages(j);IMG[en]=u;if(u)el.src=u;
+    var u=fromPages(j);
+    if(u){IMG[en]=u;IMG_FAILS[en]=0;el.src=u;}else giveUp();
    });
   }).catch(function(){
-   try{fetch(searchUrl).then(function(r){return r.json();}).then(function(j){var u=fromPages(j);IMG[en]=u;if(u)el.src=u;}).catch(function(){IMG[en]='';});}catch(e){IMG[en]='';}
+   try{fetch(searchUrl).then(function(r){return r.json();}).then(function(j){var u=fromPages(j);if(u){IMG[en]=u;IMG_FAILS[en]=0;el.src=u;}else giveUp();}).catch(function(){giveUp();});}catch(e){giveUp();}
   });
  }catch(e){}
 }
@@ -2901,19 +2911,17 @@ function sbReady(){return !!sbLib();}
 function sbClient(){
  if(sbc)return sbc;
  var L=sbLib();if(!L)return null;
- sbc=L.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},realtime:{params:{eventsPerSecond:30},heartbeatIntervalMs:15000,timeout:20000,reconnectAfterMs:function(t){return [250,500,1000,2000,4000][t-1]||5000;}}});
+ sbc=L.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},realtime:{params:{eventsPerSecond:20}}});
  return sbc;
 }
 /* تسخين السوكِت من أول ما الصفحة تفتح: كده لما تدوس اتصال بيبقى الاتصال جاهز فورًا */
-var sbWarmT=null,sbGuardInt=null;
+var sbWarmT=null;
 function sbWarm(){
  var c=sbClient();
- if(!c){clearTimeout(sbWarmT);sbWarmT=setTimeout(sbWarm,200);return;}
+ if(!c){sbWarmT=setTimeout(sbWarm,300);return;}
  try{if(c.realtime&&!c.realtime.isConnected())c.realtime.connect();}catch(e){}
- /* حارس دائم: أي وقوع للسوكِت بيترجع خلال ثواني بدل ما الاتصال يفضل مقطوع */
- if(!sbGuardInt){sbGuardInt=setInterval(function(){try{var cc=sbClient();if(cc&&cc.realtime&&!cc.realtime.isConnected()&&navigator.onLine!==false)cc.realtime.connect();}catch(e){}},5000);}
 }
-try{sbWarm();window.addEventListener('online',sbWarm);window.addEventListener('pageshow',sbWarm);window.addEventListener('focus',sbWarm);document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')sbWarm();});}catch(e){}
+try{sbWarm();window.addEventListener('online',sbWarm);document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')sbWarm();});}catch(e){}
 /* ========= تصنيف المتصدرين (Leaderboard) =========
    كل فوز حقيقي (مش ضد الحاسوب) في مزاد النجوم أو صناديق الحظ بيسجل نقط.
    ما بيحتاجش أي إعداد أو جدول تعمله بنفسك: النقط بتتخزن على جهازك
@@ -2948,14 +2956,29 @@ function tierOf(pts){
  for(var i=0;i<TIERS.length;i++)if((pts||0)>=TIERS[i].min)t=TIERS[i];
  return t;
 }
-/* مفتاح الموسم الحالي — بيتغيّر كل أسبوع (سنة+رقم أسبوع ISO) عشان
-   التصنيف الموسمي يتصفر لوحده أوتوماتيك من غير أي تدخل يدوي */
+/* مفتاح الموسم الحالي — دورة ثابتة 7 أيام (مش أسبوع تقويمي) محسوبة من
+   نقطة بداية موحّدة لكل الأجهزة (SEASON_EPOCH)، عشان كل اللاعبين يشوفوا
+   نفس الموسم ونفس ميعاد التجديد بالظبط من غير أي مزامنة إضافية.
+   لما الدورة تخلص، الموسم بيتجدد لوحده تلقائيًا (مفتاح جديد = تصفير). */
+var SEASON_EPOCH=Date.UTC(2025,0,6); /* نقطة بداية ثابتة للعدّ منها */
+var SEASON_MS=7*24*60*60*1000; /* طول الدورة: 7 أيام بالظبط */
+function currentSeasonNum(){
+ return Math.floor((Date.now()-SEASON_EPOCH)/SEASON_MS);
+}
 function currentSeasonKey(){
- var d=new Date();d=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
- d.setUTCDate(d.getUTCDate()+4-(d.getUTCDay()||7));
- var yearStart=new Date(Date.UTC(d.getUTCFullYear(),0,1));
- var wk=Math.ceil((((d-yearStart)/864e5)+1)/7);
- return d.getUTCFullYear()+'-W'+(wk<10?'0'+wk:wk);
+ return 'S'+currentSeasonNum();
+}
+/* الوقت المتبقي (بالمللي ثانية) لحد ما الموسم الحالي يتجدد */
+function seasonTimeLeft(){
+ var endsAt=SEASON_EPOCH+(currentSeasonNum()+1)*SEASON_MS;
+ return Math.max(0,endsAt-Date.now());
+}
+function fmtSeasonCountdown(ms){
+ var totalMin=Math.floor(ms/60000);
+ var d=Math.floor(totalMin/1440),h=Math.floor((totalMin%1440)/60),m=totalMin%60;
+ if(d>0)return d+' يوم و'+h+' ساعة';
+ if(h>0)return h+' ساعة و'+m+' دقيقة';
+ return m+' دقيقة';
 }
 /* بيرجع مقدار النقط (بالقيمة المطلقة) اللي هتنتقل بين الفريقين حسب فارق
    الأهداف — فارق هدف واحد = 20 نقطة، وكل ما الفارق يكبر كل ما القيمة تقل
@@ -3088,7 +3111,7 @@ function fetchSeasonLeaderboard(){
  return rows.slice(0,100);
 }
 function openLeaderboard(){lbEnsureChannel();$('lbOv').classList.remove('hidden');setLbTab('all');}
-function closeLeaderboard(){$('lbOv').classList.add('hidden');}
+function closeLeaderboard(){$('lbOv').classList.add('hidden');clearInterval(lbCdInt);}
 function setLbTab(t){
  lbTab=t;
  $('lbt0').classList.toggle('sel',t==='all');
@@ -3116,9 +3139,26 @@ function renderPromoBanner(){
   $('lbPromo').innerHTML='';
  }
 }
+var lbSeasonKeyAtLoad=null,lbCdInt=null;
+function updateSeasonCountdown(){
+ var el=$('lbSeasonCd');if(!el)return;
+ if(lbTab!=='season'){el.textContent='';return;}
+ /* لو الموسم اتجدد وإحنا فاتحين الشاشة، نعيد تحميل التصنيف تلقائيًا */
+ if(lbSeasonKeyAtLoad&&lbSeasonKeyAtLoad!==currentSeasonKey()){
+  loadLeaderboard();
+  return;
+ }
+ el.textContent='🔄 التصنيف يتجدد خلال: '+fmtSeasonCountdown(seasonTimeLeft());
+}
 function loadLeaderboard(){
  renderPromoBanner();
  $('lbMe').classList.add('hidden');
+ lbSeasonKeyAtLoad=currentSeasonKey();
+ clearInterval(lbCdInt);
+ if(lbTab==='season'){
+  updateSeasonCountdown();
+  lbCdInt=setInterval(updateSeasonCountdown,30000);
+ }else if($('lbSeasonCd')){$('lbSeasonCd').textContent='';}
  var myN=(function(){try{return $('name1').value.trim();}catch(e){return '';}})();
  if(lbTab==='h2h'){
   renderH2H(myN);
@@ -3180,7 +3220,7 @@ function makeNetConn(code,host,opts){
   if(!g){seen[k]={n:e.n||0,since:now,live:false};return null;}
   if((e.n||0)!==g.n){g.n=e.n||0;g.live=true;}
   if(g.live)return true;
-  if(now-g.since>7000)return false;
+  if(now-g.since>3500)return false;
   return null;
  }
  function fire(e,a){var l=H[e]||[];for(var i=0;i<l.length;i++){try{l[i](a);}catch(_){}}}
@@ -3273,14 +3313,12 @@ function makeNetConn(code,host,opts){
     if(dead||busy){clearInterval(hbInt);return;}
     hbN++;
     try{ch.track({r:role,c:myCid,t:myT,n:hbN});}catch(e){}
-    /* حارس السوكِت: لو الاتصال الأساسي وقع نرجّعه فورًا قبل ما اللعبة تتقطع */
-    try{if(c.realtime&&!c.realtime.isConnected()&&navigator.onLine!==false){c.realtime.connect();resubscribe('socket');}}catch(e){}
     checkPresence();
    },3000);
    if(opts.onReady)opts.onReady(shim);
    /* سلام فوري: أي طرف بيسمعه يفتح الاتصال على طول من غير انتظار مزامنة الحضور */
    try{shim.send({type:'__hs',r:role});}catch(e){}
-   [60,200,450,900,1600,2400].forEach(function(ms){setTimeout(function(){if(!opened&&!dead&&!busy)try{shim.send({type:'__hs',r:role});}catch(e){}},ms);});
+   [80,320,900].forEach(function(ms){setTimeout(function(){if(!opened&&!dead&&!busy)try{shim.send({type:'__hs',r:role});}catch(e){}},ms);});
    checkPresence();
    setTimeout(checkPresence,100);
    setTimeout(checkPresence,500);
@@ -3320,12 +3358,9 @@ function makeNetConn(code,host,opts){
  }
  function resubscribe(reason){
   if(dead||busy||recovering)return;
-  /* مفيش استسلام: بنبلّغ الواجهة بعد 8 محاولات لكن بنفضل نحاول كل 5 ثواني
-     لحد ما النت/السيرفر يرجع — ده اللي بيمنع الانقطاع النهائي */
-  if(subRetry===8&&opts.onFail)opts.onFail(reason||'error');
+  if(subRetry>=10){if(opts.onFail)opts.onFail(reason||'error');return;}
   recovering=true;subRetry++;shim._sub=false;
-  try{sbWarm();}catch(e){}
-  var wait=subRetry>8?5000:Math.min(900,60+subRetry*110)+Math.floor(Math.random()*140);
+  var wait=Math.min(900,80+subRetry*120)+Math.floor(Math.random()*140);
   setTimeout(function(){
    if(dead||busy){recovering=false;return;}
    try{c.removeChannel(ch);}catch(e){}
@@ -3335,7 +3370,7 @@ function makeNetConn(code,host,opts){
   },wait);
  }
  bindCh();
- subTimer=setTimeout(function(){if(!dead&&!shim._sub)resubscribe('slow');},2500);
+ subTimer=setTimeout(function(){if(!dead&&!shim._sub)resubscribe('slow');},3500);
  ch.subscribe(onStatus);
  /* رجوع تلقائي فوري بعد انقطاع النت أو رجوع التطبيق من الخلفية */
  function wake(){
@@ -3372,11 +3407,7 @@ function shareRoomCode(){
 function createRoom(){
  if(!sbReady())return toast('جارٍ تحميل السيرفر… انتظر ثانية وجرّب تاني');
  roomPass=(($('createPass')&&$('createPass').value)||'').trim();isPublicRoom=true;
- isHost=true;mySeat=0;roomFull=false;guestCid='';roomCode=makeCode();savedCode=roomCode;
- sbWarm();
- /* الرمز محلي 100% — نعرضه فورًا من غير انتظار السيرفر (إنشاء لحظي) */
- try{$('codeShow').textContent=roomCode;$('codeBox').classList.remove('hidden');}catch(e){}
- setStatus('⚡ الغرفة اتعملت — الرمز: '+roomCode+' … جارٍ تجهيز المزامنة');
+ setStatus('جارٍ إنشاء الغرفة…');isHost=true;mySeat=0;roomFull=false;guestCid='';roomCode=makeCode();savedCode=roomCode;
  netClose();stopPeerMgr();
  conn=netCh=makeNetConn(roomCode,true,{
   onReady:function(){
@@ -3385,7 +3416,7 @@ function createRoom(){
    lobbyAnnounce();
   },
   onPeer:function(){roomFull=true;if(lobbyMine){lobbyMine.full=true;if(lobbyCh&&lobbyChSub){try{lobbyCh.track(lobbyMine);}catch(e){}}}lobbyStopAnnounce();},
-  onFail:function(){setStatus('⚠️ الشبكة ضعيفة — جارٍ إعادة المحاولة تلقائيًا…');sbWarm();}
+  onFail:function(){setStatus('⚠️ تعذر الوصول للسيرفر — تأكد من الإنترنت وأعد المحاولة');}
  });
  if(conn){wireConn();setTimeout(ensureVoicePeer,2500);}
 }
@@ -3420,7 +3451,6 @@ function joinRoom(){
 var joinHardTimer=null;
 function connectToHost(code,silent){
  if(!sbReady()){setTimeout(function(){connectToHost(code,silent);},200);return;}
- sbWarm();
  netClose();stopPeerMgr();
  clearTimeout(openWatch);
  clearTimeout(joinHardTimer);
@@ -3752,14 +3782,24 @@ function handleData(d){
 }
 var seenActionIds={};
 function snap(){msgSeq++;return{seq:msgSeq,phase:phase,round:round,bid:bid,turn:turn,timeLeft:timeLeft,timerMax:CFG.timer,P:P,star:curStar,log:logArr,ovH:ovH,ovG:ovG,endH:endH,firstBidDone:firstBidDone,captainIdx:captainIdx,cardsReady:cardsReady,boxRound:boxRound,boxSets:boxSets,boxOpened:boxOpened,boxPicked:boxPicked,tpRound:tpRound,tpCur:tpCur,tpGuess:tpGuess,tpLocked:tpLocked,tpScore:tpScore,tpHistory:tpHistory,tpPhase:tpPhase,blindBid:blindBid,blindLocked:blindLocked};}
-var lastFullBroadcast=0,bcPending=null;
+var lastFullBroadcast=0,pendingBroadcastTimer=null;
+/* مهم: قبل كده لو broadcast() اتنادت مرتين خلال أقل من 120ms، النداء التاني كان
+   بيتجاهَل تمامًا من غير أي إعادة محاولة — يعني لو الحالة اتغيرت (مثلاً الجولة
+   خلصت وبدأت جولة جديدة) في نفس اللحظة دي، الضيف ممكن يفضل شايف آخر حالة قديمة
+   وصلته (زي "بانتظار المضيف…") للأبد، لأن رسائل الـ ping الدورية كانت بتفضل
+   بتحدّث آخر وقت استقبال وتمنع نظام إعادة المزامنة من ملاحظة إن فيه تحديث ضاع.
+   الحل: بدل ما نتجاهل النداء المتكرر، نأجّله لحد ما وقت الـ throttle يخلص
+   ونبعت وقتها أحدث حالة موجودة فعليًا (snap() بتتنادى وقت الإرسال مش وقت الجدولة). */
 function broadcast(){
  if(!(online&&isHost&&conn&&conn.open))return;
- var now=Date.now(),gap=now-lastFullBroadcast;
- /* خنق ذكي: التحديثات المتلاحقة ما تترميش (ده كان بيسبب اختلاف الحالة بين
-    الجهازين) — بنأجّل آخر حالة وبنبعتها أول ما الوقت يسمح */
- if(gap<110){if(!bcPending)bcPending=setTimeout(function(){bcPending=null;broadcast();},110-gap+5);return;}
- if(bcPending){clearTimeout(bcPending);bcPending=null;}
+ var now=Date.now();
+ var wait=120-(now-lastFullBroadcast);
+ if(wait>0){
+  clearTimeout(pendingBroadcastTimer);
+  pendingBroadcastTimer=setTimeout(broadcast,wait+10);
+  return;
+ }
+ clearTimeout(pendingBroadcastTimer);
  lastFullBroadcast=now;
  var s=snap();
  /* في المزاد الأعمى: الضيف يشوف رقمه هو بس — عرض المضيف يفضل مخفي لحد الكشف */
